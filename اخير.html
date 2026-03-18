@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>نظام الأقساط – كرار</title>
+<style>
+body{
+    font-family:Arial,"Tahoma","Noto Naskh Arabic","Amiri",sans-serif;
+    direction:rtl;
+    background:linear-gradient(to left,#0d47a1,#1976d2);
+    margin:0;
+    padding:20px;
+    font-weight:bold;
+}
+.container{
+    background:#fff;
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+    border-radius:15px;
+}
+h1{text-align:center;color:#0d47a1;font-weight:bold}
+.box{
+    background:#fff3e0;
+    border:2px solid orange;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:15px;
+}
+.box h2{
+    margin-top:0;
+    color:#0d47a1;
+    font-weight:bold;
+    font-size:18px;
+}
+input,button{
+    padding:10px;
+    width:100%;
+    margin:5px 0;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-weight:bold;
+    box-sizing:border-box;
+}
+button{background:#0d47a1;color:#fff;border:none;cursor:pointer}
+button:hover{background:#08306b}
+#loginBtn, #closeBtn {
+    background:#6a1b9a;
+    color:#fff;
+    border:2px solid #4a148c;
+    font-weight:bold;
+    border-radius:8px;
+    padding:10px;
+    cursor:pointer;
+    width:100%;
+    margin:10px 0;
+}
+#loginBtn:hover, #closeBtn:hover {background:#7b1fa2;}
+#search{background:#cce5ff}
+#name{background:#d4edda}
+#item{background:#e2d6f3}
+#phone{background:#fff3cd}
+#total{background:#ffe5b4}
+#paid{background:#f8d7da}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    font-size:14px;
+    font-weight:bold;
+}
+th,td{
+    border:1px solid #ccc;
+    padding:7px;
+    text-align:center;
+    font-weight:bold;
+}
+th{background:#0d47a1;color:#fff}
+.hidden{display:none}
+.pay{background:#2e7d32}
+.addDebt{background:#ff9800}
+.report{background:#6a1b9a}
+.delete{background:#c62828}
+.whatsapp{background:#25d366}
+.logout{background:#555}
+.overdue{background:#ffebee;color:#b71c1c;font-weight:bold;}
+.totalBox{
+    background:#fff3e0;
+    border:2px solid orange;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+    font-size:18px;
+    text-align:center;
+    font-weight:bold;
+}
+#reportModal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    overflow:auto;
+    z-index:9999;
+}
+#reportContent{
+    background:#fff;
+    margin:20px auto;
+    padding:20px;
+    border-radius:10px;
+    max-width:600px;
+    width:90%;
+    max-height:80vh;
+    overflow-y:auto;
+    font-weight:bold;
+    position:relative;
+}
+#closeReportBtn{
+    position:absolute;
+    top:10px;
+    right:15px;
+    background:#c62828;
+    color:#fff;
+    border:none;
+    border-radius:50%;
+    width:30px;
+    height:30px;
+    font-size:18px;
+    cursor:pointer;
+    font-weight:bold;
+}
+#closeReportBtn:hover{background:#b71c1c;}
+button.deletePay, button.deleteItem{
+    background:#c62828;
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    padding:3px 6px;
+    font-weight:bold;
+}
+button.deletePay:hover, button.deleteItem:hover{background:#b71c1c;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔐 نظام إدارة الأقساط – كرار</h1>
+
+<div class="totalBox" id="totalDebt">
+💰 مجموع الديون: 0 | 💵 الديون المستلمة للشهر: <span id="receivedThisMonth">0</span> 
+<button onclick="resetReceived()" style="margin-left:10px;padding:5px 10px;background:#c62828;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">❌ حذف الديون المستلمة</button>
+</div>
+
+<div class="box">
+<h2>🔍 خانة البحث ومعرفة المتأخرين</h2>
+<input id="search" placeholder="بحث بالاسم أو الهاتف" onkeyup="show()">
+<button onclick="filterOverdue()">⏰ المتأخرين</button>
+<button onclick="resetFilter()">📋 عرض الكل</button>
+</div>
+
+<div class="box">
+<h2>➕ خانة إضافة زبون</h2>
+<input id="name" placeholder="اسم الزبون">
+<input id="item" placeholder="نوع السلعة">
+<input id="phone" placeholder="رقم الهاتف">
+<input id="total" type="number" placeholder="المبلغ الكلي">
+<input id="paid" type="number" placeholder="المدفوع">
+<button id="addBtn">إضافة زبون</button>
+</div>
+
+<div class="box secure hidden" id="printEditBox">
+<h2>📝 الطباعة والحذف والتعديل</h2>
+<button id="printBtn">🖨️ طباعة القائمة</button>
+<button id="editDeleteBtn">✏️🗑️ تعديل / حذف زبون</button>
+<button id="backupBtn">💾 حفظ نسخة احتياطية</button>
+<button id="restoreBtn">♻️ استرجاع نسخة احتياطية</button>
+</div>
+
+<button id="loginBtn" onclick="login()">🔑 الدخول إلى واجهة التسديد</button>
+<button id="closeBtn" style="display:none;" onclick="closePayment()">🔒 إغلاق</button>
+
+<table>
+<thead>
+<tr>
+<th>#</th><th>الاسم</th><th>السلعة</th><th>الهاتف</th><th>الكلي</th><th>المدفوع</th><th>المتبقي</th><th>واتساب</th>
+<th class="secure hidden">تسديد</th><th class="secure hidden">دين</th><th class="secure hidden">كشف</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+
+<div id="reportModal">
+<div id="reportContent">
+<button id="closeReportBtn">×</button>
+<h3>كشف الحساب</h3>
+<div id="reportTable"></div>
+</div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCu5BTre1TOdvn_awY3Ve0DiKh_jxRgCno",
+  authDomain: "karar-6e149.firebaseapp.com",
+  databaseURL: "https://karar-6e149-default-rtdb.firebaseio.com",
+  projectId: "karar-6e149",
+  storageBucket: "karar-6e149.firebasestorage.app",
+  messagingSenderId: "450636265245",
+  appId: "1:450636265245:web:9c8d8be24f8cb660e793f4",
+  measurementId: "G-SLBCF4YEBR"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// عناصر HTML
+let nameInput = document.getElementById("name");
+let itemInput = document.getElementById("item");
+let phoneInput = document.getElementById("phone");
+let totalInput = document.getElementById("total");
+let paidInput = document.getElementById("paid");
+let addBtn = document.getElementById("addBtn");
+let list = document.getElementById("list");
+
+let PASSWORD="karar";
+let secureMode=false;
+let showOnlyOverdue=false;
+let data=[]; // سيتم جلب البيانات من Firebase مباشرة
+let receivedThisMonth=0;
+
+// تنسيق الأرقام
+function formatNumber(n){return n.toLocaleString('de-DE');}
+
+// جلب البيانات من Firebase
+function fetchData(){
+    database.ref('customers').once('value').then(snapshot=>{
+        data=[];
+        snapshot.forEach(child=>{
+            let c=child.val();
+            data.push({...c,createdAt:c.createdAt||new Date()});
+        });
+        show();
+    });
+}
+
+// عرض البيانات
+function show(){
+    let q=document.getElementById("search").value.toLowerCase();
+    list.innerHTML="";
+    let totalDebt=0;
+    data.forEach((c,index)=>{
+        let match=c.name.toLowerCase().includes(q)||c.phone.includes(q);
+        if(showOnlyOverdue && ((Date.now()-new Date(c.createdAt))/86400000)<30) return;
+        if(!match) return;
+        let rem=c.total-c.paid;
+        totalDebt+=rem;
+        let tr=document.createElement("tr");
+        tr.innerHTML=`<td>${index+1}</td><td>${c.name}</td><td>${c.item}</td><td>${c.phone}</td><td>${formatNumber(c.total)}</td><td>${formatNumber(c.paid)}</td><td>${formatNumber(rem)}</td><td><button class="whatsapp" onclick="sendWhatsapp(${index})">💬</button></td>${secureMode?`<td><button class="pay">تسديد</button></td><td><button class="addDebt">➕</button></td><td><button class="report">كشف</button></td>`:""}`;
+        list.appendChild(tr);
+    });
+    document.getElementById("totalDebt").innerHTML=`💰 مجموع الديون: ${formatNumber(totalDebt)} | 💵 الديون المستلمة للشهر: <span id="receivedThisMonth">${formatNumber(receivedThisMonth)}</span>
+    <button onclick="resetReceived()" style="margin-left:10px;padding:5px 10px;background:#c62828;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">❌ حذف الديون المستلمة</button>`;
+}
+
+// إرسال واتساب
+function sendWhatsapp(i){
+    let c=data[i];
+    let rem=c.total-c.paid;
+    let msg=`مرحبا ${c.name}%0Aرصيدك المتبقي: ${formatNumber(rem)} دينار`;
+    window.open(`https://wa.me/${c.phone}?text=${msg}`,'_blank');
+}
+
+// إضافة زبون
+function addCustomer() {
+    if(!nameInput.value||!itemInput.value||!phoneInput.value||totalInput.value<=0) return alert("أكمل البيانات");
+    let newItems=[{name:itemInput.value,price:+totalInput.value}];
+    let customer={name:nameInput.value,item:itemInput.value,phone:phoneInput.value,total:+totalInput.value,paid:+paidInput.value,log:[],items:newItems,createdAt:new Date().toISOString()};
+    // Firebase
+    database.ref('customers').push(customer).then(()=>console.log("تم الحفظ في Firebase!")).catch(err=>console.error(err));
+    fetchData();
+    nameInput.value=""; itemInput.value=""; phoneInput.value=""; totalInput.value=""; paidInput.value="";
+}
+addBtn.addEventListener('click', addCustomer);
+
+// واجهة التسديد
+function login(){
+    if(prompt("كلمة المرور:")==PASSWORD){
+        secureMode=true;
+        document.getElementById("loginBtn").style.display="none";
+        document.getElementById("closeBtn").style.display="block";
+        document.getElementById("printEditBox").classList.remove("hidden");
+        document.querySelectorAll(".secure").forEach(e=>e.classList.remove("hidden"));
+        show();
+    }
+}
+function closePayment(){
+    secureMode=false;
+    document.getElementById("loginBtn").style.display="block";
+    document.getElementById("closeBtn").style.display="none";
+    document.getElementById("printEditBox").classList.add("hidden");
+    document.querySelectorAll(".secure").forEach(e=>e.classList.add("hidden"));
+    show();
+}
+
+function resetReceived(){receivedThisMonth=0; show();}
+function filterOverdue(){showOnlyOverdue=true; show();}
+function resetFilter(){showOnlyOverdue=false; document.getElementById("search").value=""; show();}
+
+fetchData();
+</script>
+</body>
+</html>
